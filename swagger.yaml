@@ -1,0 +1,164 @@
+# openapi: 3.0.0
+# info:
+#   title: CSSD Management API
+#   version: 1.0.0
+#   description: API documentation for CSSD Management System
+# servers:
+#   - url: http://localhost:3001/
+#     description: Local server
+# paths:
+#   /cssd_requests:
+#     get:
+#       summary: Get all CSSD requests
+#       responses:
+#         '200':
+#           description: A list of CSSD requests
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   $ref: '#/components/schemas/Request'
+#               examples:
+#                 sample:
+#                   value:
+#                     - id: "REQ001"
+#                       department: "Cardiology"
+#                       items: "scissors"
+#                       quantity: 4
+#                       priority: "High"
+#                       status: "Approved"
+#                       date: "2025-07-02"
+#                       time: "01:53 pm"
+#                     - id: "REQ002"
+#                       department: "Neurology"
+#                       items: "scissors, forcaps"
+#                       quantity: 9
+#                       priority: "High"
+#                       status: "Approved"
+#                       date: "2025-07-10"
+#                       time: "01:54 pm"
+#       post:
+#         summary: Create a new CSSD request
+#         requestBody:
+#           required: true
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Request'
+#         responses:
+#           '201':
+#             description: Created
+#       patch:
+#         summary: Update a CSSD request
+#         parameters:
+#           - in: path
+#             name: id
+#             schema:
+#               type: string
+#             required: true
+#             description: Request ID
+#         requestBody:
+#           required: true
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Request'
+#         responses:
+#           '200':
+#             description: CSSD request found
+#             content:
+#               application/json:
+#                 schema:
+#                   $ref: '#/components/schemas/Request'
+#           '404':
+#             description: Not found
+#       delete:
+#         summary: Delete a CSSD request
+#         parameters:
+#           - in: path
+#             name: id
+#             schema:
+#               type: string
+#             required: true
+#             description: Request ID
+#         responses:
+#           '200':
+#             description: Deleted
+#           '404':
+#             description: Not found
+#   /availableItems:
+#     get:
+#       summary: Get all available items
+#       responses:
+#         '200':
+#           description: A list of available items
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   $ref: '#/components/schemas/AvailableItem'
+#               examples:
+#                 sample:
+#                   value:
+#                     - id: "AV001"
+#                       department: "Cardiology"
+#                       items: "scissors"
+#                       quantity: 2
+#                       status: "Ready"
+#                       readyTime: "2025-07-02T14:00:00Z"
+#                       sterilizationId: "ST001"
+#                       machine: "Autoclave-1"
+#                       process: "Steam"
+#                     - id: "AV002"
+#                       department: "Neurology"
+#                       items: "forceps"
+#                       quantity: 3
+#                       status: "Ready"
+#                       readyTime: "2025-07-03T10:30:00Z"
+#                       sterilizationId: "ST002"
+#                       machine: "Autoclave-2"
+#                       process: "Chemical"
+# components:
+#   schemas:
+#     Request:
+#       type: object
+#       properties:
+#         id:
+#           type: string
+#         department:
+#           type: string
+#         items:
+#           type: string
+#         quantity:
+#           type: number
+#         priority:
+#           type: string
+#         status:
+#           type: string
+#         date:
+#           type: string
+#         time:
+#           type: string
+#     AvailableItem:
+#       type: object
+#       properties:
+#         id:
+#           type: string
+#         department:
+#           type: string
+#         items:
+#           type: string
+#         quantity:
+#           type: number
+#         status:
+#           type: string
+#         readyTime:
+#           type: string
+#         sterilizationId:
+#           type: string
+#         machine:
+#           type: string
+#         process:
+#           type: string

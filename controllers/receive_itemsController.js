@@ -26,12 +26,20 @@ exports.create = (req, res) => {
   res.status(201).json(item);
 };
 
+// Handle both PUT and PATCH requests
 exports.update = (req, res) => {
   const idx = receive_items.findIndex(i => i.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  receive_items[idx] = { ...receive_items[idx], ...req.body };
+  
+  // For PATCH, merge the existing item with the request body
+  // For PUT, replace the entire item
+  const updatedItem = req.method === 'PATCH' 
+    ? { ...receive_items[idx], ...req.body, updatedAt: new Date().toISOString() }
+    : { ...req.body };
+    
+  receive_items[idx] = updatedItem;
   saveDb();
-  res.json(receive_items[idx]);
+  res.json(updatedItem);
 };
 
 exports.remove = (req, res) => {

@@ -177,6 +177,17 @@
     },
     {
       "id": "0894"
+    },
+    {
+      "id": "REQ019",
+      "department": "Dermatology",
+      "items": "[{\"name\":\"GGD\",\"quantity\":5}]",
+      "quantity": 5,
+      "priority": "High",
+      "requestedBy": "System",
+      "status": "Requested",
+      "date": "2025-08-02",
+      "time": "10:54 AM"
     }
   ],
   "receive_items": [
@@ -437,11 +448,12 @@
       "quantity": 8,
       "priority": "Medium",
       "requestedBy": "",
-      "status": "Pending",
+      "status": "Approved",
       "date": "2025-07-24",
       "time": "01:31 pm",
-      "receivedDate": "2025-07-24",
-      "receivedTime": "01:31 pm"
+      "receivedDate": "2025-08-01",
+      "receivedTime": "12:12 PM",
+      "updatedAt": "2025-08-01T06:42:09.775Z"
     },
     {
       "id": "REC025",
@@ -470,6 +482,20 @@
       "time": "02:00 pm",
       "receivedDate": "2025-07-24",
       "receivedTime": "02:00 pm"
+    },
+    {
+      "id": "REC019",
+      "requestId": "REQ019",
+      "department": "Dermatology",
+      "items": "[{\"name\":\"GGD\",\"quantity\":5}]",
+      "quantity": 5,
+      "priority": "High",
+      "requestedBy": "System",
+      "status": "Pending",
+      "date": "2025-08-02",
+      "time": "10:54 AM",
+      "receivedDate": "2025-08-02",
+      "receivedTime": "10:54 AM"
     }
   ],
   "stockItems": [

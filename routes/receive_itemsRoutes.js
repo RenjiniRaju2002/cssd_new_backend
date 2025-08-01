@@ -151,6 +151,7 @@ router.post('/', controller.create);
  */
 router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
+router.patch('/:id', controller.update); // Add PATCH endpoint
 router.delete('/:id', controller.remove);
 
 module.exports = router; 

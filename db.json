@@ -463,11 +463,11 @@
       "quantity": 7,
       "priority": "Medium",
       "requestedBy": "",
-      "status": "Pending",
+      "status": "Approved",
       "date": "2025-07-24",
       "time": "02:00 pm",
-      "receivedDate": "2025-07-24",
-      "receivedTime": "02:00 pm"
+      "receivedDate": "2025-08-01",
+      "receivedTime": "01:37 PM"
     },
     {
       "id": "REC026",
@@ -496,6 +496,62 @@
       "time": "10:54 AM",
       "receivedDate": "2025-08-02",
       "receivedTime": "10:54 AM"
+    },
+    {
+      "id": "REC001",
+      "requestId": "REQ001",
+      "department": "Radiology",
+      "items": "[{\"name\":\"bhjn\",\"quantity\":22}]",
+      "quantity": 22,
+      "priority": "High",
+      "requestedBy": "System",
+      "status": "Pending",
+      "date": "2025-08-01",
+      "time": "02:06 PM",
+      "receivedDate": "2025-08-01",
+      "receivedTime": "02:06 PM"
+    },
+    {
+      "id": "REC001",
+      "requestId": "REQ001",
+      "department": "Radiology",
+      "items": "[{\"name\":\"vnv\",\"quantity\":7}]",
+      "quantity": 7,
+      "priority": "High",
+      "requestedBy": "System",
+      "status": "Pending",
+      "date": "2025-08-01",
+      "time": "02:12 PM",
+      "receivedDate": "2025-08-01",
+      "receivedTime": "02:12 PM"
+    },
+    {
+      "id": "REC006",
+      "requestId": "REQ006",
+      "department": "Oncology",
+      "items": "[{\"name\":\"jhjhjgj\",\"quantity\":2}]",
+      "quantity": 2,
+      "priority": "Medium",
+      "requestedBy": "System",
+      "status": "Pending",
+      "date": "2025-08-05",
+      "time": "10:27 AM",
+      "receivedDate": "2025-08-05",
+      "receivedTime": "10:27 AM"
+    },
+    {
+      "id": "REC010",
+      "requestId": "KIT002",
+      "department": "Cardiology",
+      "items": "[{\"name\":\"kjh\",\"quantity\":2}]",
+      "quantity": 2,
+      "priority": "High",
+      "requestedBy": "",
+      "status": "Pending",
+      "date": "2025-08-04",
+      "time": "11:30 AM",
+      "receivedDate": "2025-08-04",
+      "receivedTime": "11:30 AM"
     }
   ],
   "stockItems": [
@@ -700,6 +756,16 @@
       "endTime": "",
       "status": "In Progress",
       "duration": 45
+    },
+    {
+      "id": "STE018",
+      "machine": "Autoclave-3",
+      "process": "Chemical Sterilization",
+      "itemId": "SURG-1752568315137",
+      "startTime": "16:57",
+      "endTime": "",
+      "status": "In Progress",
+      "duration": 75
     }
   ],
   "availableItems": [

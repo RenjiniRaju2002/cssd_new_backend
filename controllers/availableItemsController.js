@@ -1,51 +1,22 @@
-// const fs = require('fs');
-// const path = require('path');
+const fs = require('fs');
+const path = require('path');
+const sql = require('mssql');
+
+const dbConfig = require('../db');
+
+
+
+
+
 // const dbFilePath = path.join(__dirname, '../db.json');
 // const db = require('../db.json');
 
-// const availableItems = db['availableItems'];
+// const availableItems = db['availableItems'] || [];
 
-// function saveDb() {
-//   fs.writeFileSync(dbFilePath, JSON.stringify(db, null, 2));
-// }
-
-// exports.getAll = (req, res) => {
-//   res.json(availableItems);
-// };
-
-// exports.getById = (req, res) => {
-//   const item = availableItems.find(i => i.id === req.params.id);
-//   if (!item) return res.status(404).json({ error: 'Not found' });
-//   res.json(item);
-// };
-
-// exports.create = (req, res) => {
-//   const item = req.body;
-//   availableItems.push(item);
-//   saveDb();
-//   res.status(201).json(item);
-// };
-
-// exports.update = (req, res) => {
-//   const idx = availableItems.findIndex(i => i.id === req.params.id);
-//   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-//   availableItems[idx] = { ...availableItems[idx], ...req.body };
-//   saveDb();
-//   res.json(availableItems[idx]);
-// };
-
-// exports.remove = (req, res) => {
-//   const idx = availableItems.findIndex(i => i.id === req.params.id);
-//   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-//   const removed = availableItems.splice(idx, 1);
-//   saveDb();
-//   res.json(removed[0]);
-// };
-
-
-
-const sql = require('mssql');
-const dbConfig = require('../db'); // assumes you’ve set this up
+function saveDb() {
+  db.availableItems = availableItems;
+  fs.writeFileSync(dbFilePath, JSON.stringify(db, null, 2));
+}
 
 // GET ALL ITEMS
 exports.getAll = async (req, res) => {
@@ -53,8 +24,9 @@ exports.getAll = async (req, res) => {
     const pool = await sql.connect(dbConfig);
     const result = await pool.request().query('SELECT * FROM availableItems');
     res.json(result.recordset);
+    
   } catch (error) {
-    console.error('Error fetching items:', error);
+    console.error('Error fetching available items:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -65,8 +37,8 @@ exports.getById = async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
     const result = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM availableItems WHERE id = @id');
+      .input('id', sql.Int, id)
+      .query('SELECT * FROM availableItems WHERE ai_id_pk = @id');
 
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Not found' });
@@ -74,80 +46,223 @@ exports.getById = async (req, res) => {
 
     res.json(result.recordset[0]);
   } catch (error) {
-    console.error('Error fetching item:', error);
+    console.error('Error fetching available item by ID:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
 // CREATE NEW ITEM
 exports.create = async (req, res) => {
-  const { id, name, quantity } = req.body;
-  try {
-    const pool = await sql.connect(dbConfig);
-    await pool.request()
-      .input('id', sql.VarChar, id)
-      .input('name', sql.VarChar, name)
-      .input('quantity', sql.Int, quantity)
-      .query('INSERT INTO availableItems (id, name, quantity) VALUES (@id, @name, @quantity)');
+  const {
+    id,
+    name,
+    category,
+    availableQuantity,
+    totalQuantity,
+    unit,
+    location,
+    status = 'Available',
+    addedBy = 'System'
+  } = req.body;
 
-    res.status(201).json({ id, name, quantity });
+  let pool;
+  
+  try {
+    // 1. Save to MSSQL
+    pool = await sql.connect(dbConfig);
+    
+    const request = pool.request();
+    
+    // Insert into MSSQL
+    const result = await request
+      .input('name', sql.VarChar, name)
+      .input('category', sql.VarChar, category || null)
+      .input('availableQuantity', sql.BigInt, parseInt(availableQuantity, 10) || 0)
+      .input('totalQuantity', sql.BigInt, parseInt(totalQuantity, 10) || 0)
+      .input('unit', sql.VarChar, unit || null)
+      .input('location', sql.VarChar, location || null)
+      .input('status', sql.VarChar, status)
+      .input('addedBy', sql.VarChar, addedBy)
+      .query(`
+        INSERT INTO availableItems (
+          ai_item_name,
+          ai_category,
+          ai_available_quantity,
+          ai_total_quantity,
+          ai_unit,
+          ai_location,
+          ai_status,
+          ai_added_by
+        )
+        OUTPUT INSERTED.ai_id_pk
+        VALUES (
+          @name,
+          @category,
+          @availableQuantity,
+          @totalQuantity,
+          @unit,
+          @location,
+          @status,
+          @addedBy
+        )
+      `);
+
+    const newItemId = result.recordset[0].ai_id_pk;
+    
+    // 2. Also save to JSON file
+    const newItem = {
+      id: newItemId.toString(),
+      name,
+      category,
+      availableQuantity: parseInt(availableQuantity, 10) || 0,
+      totalQuantity: parseInt(totalQuantity, 10) || 0,
+      unit: unit || null,
+      location: location || null,
+      status,
+      lastUpdated: new Date().toISOString(),
+      addedBy,
+      addedOn: new Date().toISOString()
+    };
+    
+    availableItems.push(newItem);
+    saveDb();
+    
+    res.status(201).json({
+      id: newItemId,
+      ...newItem,
+      message: 'Available item created successfully'
+    });
+    
   } catch (error) {
-    console.error('Error creating item:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error creating available item:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: error.message 
+    });
+  } finally {
+    if (pool) {
+      await pool.close();
+    }
   }
 };
 
 // UPDATE ITEM
 exports.update = async (req, res) => {
   const { id } = req.params;
-  const { name, quantity } = req.body;
-
+  const updates = req.body;
+  
   try {
     const pool = await sql.connect(dbConfig);
-
-    const result = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM availableItems WHERE id = @id');
-
-    if (result.recordset.length === 0) {
-      return res.status(404).json({ error: 'Not found' });
+    
+    // 1. Update in MSSQL
+    const request = pool.request();
+    let updateFields = [];
+    
+    // Build dynamic update query
+    Object.keys(updates).forEach((key, index) => {
+      const paramName = `param${index}`;
+      const dbField = {
+        'name': 'ai_item_name',
+        'category': 'ai_category',
+        'availableQuantity': 'ai_available_quantity',
+        'totalQuantity': 'ai_total_quantity',
+        'unit': 'ai_unit',
+        'location': 'ai_location',
+        'status': 'ai_status'
+      }[key];
+      
+      if (dbField) {
+        updateFields.push(`${dbField} = @${paramName}`);
+        request.input(paramName, 
+          key === 'availableQuantity' || key === 'totalQuantity' ? sql.BigInt : sql.VarChar, 
+          updates[key]
+        );
+      }
+    });
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
     }
-
-    await pool.request()
-      .input('id', sql.VarChar, id)
-      .input('name', sql.VarChar, name)
-      .input('quantity', sql.Int, quantity)
-      .query('UPDATE availableItems SET name = @name, quantity = @quantity WHERE id = @id');
-
-    res.json({ id, name, quantity });
+    
+    // Add modified timestamp
+    updateFields.push('ai_modified_on = GETDATE()');
+    
+    // Add ID parameter
+    request.input('id', sql.Int, id);
+    
+    const query = `
+      UPDATE availableItems 
+      SET ${updateFields.join(', ')}
+      WHERE ai_id_pk = @id
+    `;
+    
+    const result = await request.query(query);
+    
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Available item not found' });
+    }
+    
+    // 2. Update in JSON file
+    const itemIndex = availableItems.findIndex(item => item.id === id);
+    if (itemIndex !== -1) {
+      availableItems[itemIndex] = { 
+        ...availableItems[itemIndex], 
+        ...updates,
+        lastUpdated: new Date().toISOString()
+      };
+      saveDb();
+    }
+    
+    res.json({ 
+      id,
+      ...updates,
+      message: 'Available item updated successfully' 
+    });
+    
   } catch (error) {
-    console.error('Error updating item:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error updating available item:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: error.message 
+    });
   }
 };
 
 // DELETE ITEM
 exports.remove = async (req, res) => {
   const { id } = req.params;
-
+  
   try {
     const pool = await sql.connect(dbConfig);
-
+    
+    // 1. Delete from MSSQL
     const result = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM availableItems WHERE id = @id');
-
-    if (result.recordset.length === 0) {
-      return res.status(404).json({ error: 'Not found' });
+      .input('id', sql.Int, id)
+      .query('DELETE FROM availableItems WHERE ai_id_pk = @id');
+    
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Available item not found' });
     }
-
-    await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('DELETE FROM availableItems WHERE id = @id');
-
-    res.json(result.recordset[0]);
+    
+    // 2. Delete from JSON file
+    const itemIndex = availableItems.findIndex(item => item.id === id);
+    if (itemIndex !== -1) {
+      const removed = availableItems.splice(itemIndex, 1);
+      saveDb();
+      return res.json(removed[0]);
+    }
+    
+    res.status(404).json({ error: 'Available item not found in JSON store' });
+    
   } catch (error) {
-    console.error('Error deleting item:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error deleting available item:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: error.message 
+    });
   }
 };
+
+
+
+

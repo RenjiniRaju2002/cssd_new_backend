@@ -15,20 +15,19 @@
     "express": "^5.1.0",
     "js-yaml": "^4.1.0",
     "mssql": "^11.0.1",
-    "nodemon": "^3.1.10",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RenjiniRaju2002/cssd_backend.git"
+    "url": "git+https://github.com/RenjiniRaju2002/CSSD_Backend.git"
   },
   "bugs": {
-    "url": "https://github.com/RenjiniRaju2002/cssd_backend/issues"
+    "url": "https://github.com/RenjiniRaju2002/CSSD_Backend/issues"
   },
-  "homepage": "https://github.com/RenjiniRaju2002/cssd_backend#readme",
+  "homepage": "https://github.com/RenjiniRaju2002/CSSD_Backend#readme",
   "description": "",
   "devDependencies": {
-    "@types/dotenv": "^6.1.1"
+    "nodemon": "^3.1.10"
   }
 }

@@ -1,62 +1,56 @@
-// const fs = require('fs');
-// const path = require('path');
-// const dbFilePath = path.join(__dirname, '../db.json');
-// const db = require('../db.json');
-
-// const cssd_requests = db['cssd_requests'];
-
-// function saveDb() {
-//   fs.writeFileSync(dbFilePath, JSON.stringify(db, null, 2));
-// }
-
-// exports.getAll = (req, res) => {
-//   res.json(cssd_requests);
-// };
-
-// exports.getById = (req, res) => {
-//   const item = cssd_requests.find(i => i.id === req.params.id);
-//   if (!item) return res.status(404).json({ error: 'Not found' });
-//   res.json(item);
-// };
-
-// exports.create = (req, res) => {
-//   const item = req.body;
-//   cssd_requests.push(item);
-//   saveDb();
-//   res.status(201).json(item);
-// };
-
-// exports.update = (req, res) => {
-//   const idx = cssd_requests.findIndex(i => i.id === req.params.id);
-//   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-//   cssd_requests[idx] = { ...cssd_requests[idx], ...req.body };
-//   saveDb();
-//   res.json(cssd_requests[idx]);
-// };
-
-// exports.remove = (req, res) => {
-//   const idx = cssd_requests.findIndex(i => i.id === req.params.id);
-//   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-//   const removed = cssd_requests.splice(idx, 1);
-//   saveDb();
-//   res.json(removed[0]);
-// }; 
-
-
-
-
-const sql = require('mssql');
-const dbConfig = require('../db');
+const { poolPromise, sql } = require('../db');
 
 // GET ALL
 exports.getAll = async (req, res) => {
   try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool.request().query('SELECT * FROM CSSD_request');
-    res.json(result.recordset);
+    const pool = await poolPromise;
+    const result = await pool.request().query('SELECT * FROM CSSD_request ORDER BY crd_id_pk DESC');
+    
+    // Transform the data to match frontend expectations
+    const transformedData = result.recordset.map(row => {
+      // Format time properly in 12-hour format with AM/PM
+      let formattedTime = '';
+      if (row.crd_time) {
+        try {
+          const date = new Date(row.crd_time);
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12; // Convert 0 to 12
+          formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        } catch (e) {
+          // Fallback to string manipulation if Date parsing fails
+          const timeStr = row.crd_time.toString();
+          if (timeStr.includes(':')) {
+            const timeParts = timeStr.split(':');
+            const hours = parseInt(timeParts[0]);
+            const minutes = parseInt(timeParts[1]);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+          } else {
+            formattedTime = timeStr.substring(0, 5);
+          }
+        }
+      }
+      
+      return {
+        id: `REQ${row.crd_id_pk.toString().padStart(3, '0')}`,
+        department: row.crd_department,
+        items: row.crd_items,
+        quantity: row.crd_quantity,
+        priority: row.crd_priority,
+        requestedBy: row.crd_requested_by,
+        status: row.crd_status,
+        date: row.crd_request_on ? row.crd_request_on.toISOString().split('T')[0] : '',
+        time: formattedTime
+      };
+    });
+    
+    res.json(transformedData);
   } catch (error) {
-    console.error('Error fetching cssd_requests:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error fetching CSSD requests:', error);
+    res.status(500).json({ error: 'Failed to fetch CSSD requests', details: error.message });
   }
 };
 
@@ -64,89 +58,146 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
-    const pool = await sql.connect(dbConfig);
+    const pool = await poolPromise;
     const result = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM CSSD_request WHERE id = @id');
+      .input('id', sql.BigInt, id)
+      .query('SELECT * FROM CSSD_request WHERE crd_id_pk = @id');
 
     if (result.recordset.length === 0) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: 'Request not found' });
     }
 
-    res.json(result.recordset[0]);
+    const row = result.recordset[0];
+    
+    // Format time properly in 12-hour format with AM/PM
+    let formattedTime = '';
+    if (row.crd_time) {
+      try {
+        const date = new Date(row.crd_time);
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12; // Convert 0 to 12
+        formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      } catch (e) {
+        // Fallback to string manipulation if Date parsing fails
+        const timeStr = row.crd_time.toString();
+        if (timeStr.includes(':')) {
+          const timeParts = timeStr.split(':');
+          const hours = parseInt(timeParts[0]);
+          const minutes = parseInt(timeParts[1]);
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        } else {
+          formattedTime = timeStr.substring(0, 5);
+        }
+      }
+    }
+    
+    const transformedData = {
+      id: `REQ${row.crd_id_pk.toString().padStart(3, '0')}`,
+      department: row.crd_department,
+      items: row.crd_items,
+      quantity: row.crd_quantity,
+      priority: row.crd_priority,
+      requestedBy: row.crd_requested_by,
+      status: row.crd_status,
+      date: row.crd_request_on ? row.crd_request_on.toISOString().split('T')[0] : '',
+      time: formattedTime
+    };
+
+    res.json(transformedData);
   } catch (error) {
     console.error('Error fetching request by ID:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Failed to fetch request', details: error.message });
   }
 };
 
 // CREATE
 exports.create = async (req, res) => {
-  const { id, department, items, quantity, priority, status, date, time } = req.body;
+  const { department, items, quantity, priority, requestedBy, status } = req.body;
 
   try {
-    const pool = await sql.connect(dbConfig);
-    await pool.request()
-      .input('id', sql.VarChar, id)
+    const pool = await poolPromise;
+    const result = await pool.request()
       .input('department', sql.VarChar, department)
       .input('items', sql.VarChar, items)
-      .input('quantity', sql.Int, quantity)
+      .input('quantity', sql.BigInt, quantity)
       .input('priority', sql.VarChar, priority)
-      .input('status', sql.VarChar, status)
-      .input('date', sql.VarChar, date)
-      .input('time', sql.VarChar, time)
+      .input('requestedBy', sql.VarChar, requestedBy)
+      .input('status', sql.VarChar, status || 'Requested')
       .query(`
-        INSERT INTO CSSD_request (id, department, items, quantity, priority, status, date, time)
-        VALUES (@id, @department, @items, @quantity, @priority, @status, @date, @time)
+        INSERT INTO CSSD_request (crd_department, crd_items, crd_quantity, crd_priority, crd_requested_by, crd_status, crd_request_on, crd_time)
+        VALUES (@department, @items, @quantity, @priority, @requestedBy, @status, GETDATE(), CAST(GETDATE() AS TIME))
       `);
 
-    res.status(201).json({ id, department, items, quantity, priority, status, date, time });
+    res.status(201).json({ 
+      message: 'Request created successfully',
+      department, 
+      items, 
+      quantity, 
+      priority, 
+      requestedBy, 
+      status 
+    });
   } catch (error) {
     console.error('Error creating request:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Failed to create request', details: error.message });
   }
 };
 
 // UPDATE
 exports.update = async (req, res) => {
   const { id } = req.params;
-  const { department, items, quantity, priority, status, date, time } = req.body;
+  const { department, items, quantity, priority, requestedBy, status } = req.body;
 
   try {
-    const pool = await sql.connect(dbConfig);
-    const check = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM cssd_requests WHERE id = @id');
+    const pool = await poolPromise;
+    
+    // Check if request exists
+    const checkResult = await pool.request()
+      .input('id', sql.BigInt, id)
+      .query('SELECT * FROM CSSD_request WHERE crd_id_pk = @id');
 
-    if (check.recordset.length === 0) {
-      return res.status(404).json({ error: 'Not found' });
+    if (checkResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
     }
 
+    // Update the request
     await pool.request()
-      .input('id', sql.VarChar, id)
+      .input('id', sql.BigInt, id)
       .input('department', sql.VarChar, department)
       .input('items', sql.VarChar, items)
-      .input('quantity', sql.Int, quantity)
+      .input('quantity', sql.BigInt, quantity)
       .input('priority', sql.VarChar, priority)
+      .input('requestedBy', sql.VarChar, requestedBy)
       .input('status', sql.VarChar, status)
-      .input('date', sql.VarChar, date)
-      .input('time', sql.VarChar, time)
       .query(`
-        UPDATE cssd_requests
-        SET department = @department,
-            items = @items,
-            quantity = @quantity,
-            priority = @priority,
-            status = @status,
-            date = @date,
-            time = @time
-        WHERE id = @id
+        UPDATE CSSD_request
+        SET crd_department = @department,
+            crd_items = @items,
+            crd_quantity = @quantity,
+            crd_priority = @priority,
+            crd_requested_by = @requestedBy,
+            crd_status = @status,
+            crd_modified_on = GETDATE()
+        WHERE crd_id_pk = @id
       `);
 
-    res.json({ id, department, items, quantity, priority, status, date, time });
+    res.json({ 
+      message: 'Request updated successfully',
+      id,
+      department, 
+      items, 
+      quantity, 
+      priority, 
+      requestedBy, 
+      status 
+    });
   } catch (error) {
     console.error('Error updating request:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Failed to update request', details: error.message });
   }
 };
 
@@ -155,23 +206,28 @@ exports.remove = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const pool = await sql.connect(dbConfig);
+    const pool = await poolPromise;
 
-    const check = await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('SELECT * FROM cssd_requests WHERE id = @id');
+    // Check if request exists
+    const checkResult = await pool.request()
+      .input('id', sql.BigInt, id)
+      .query('SELECT * FROM CSSD_request WHERE crd_id_pk = @id');
 
-    if (check.recordset.length === 0) {
-      return res.status(404).json({ error: 'Not found' });
+    if (checkResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
     }
 
+    // Delete the request
     await pool.request()
-      .input('id', sql.VarChar, id)
-      .query('DELETE FROM cssd_requests WHERE id = @id');
+      .input('id', sql.BigInt, id)
+      .query('DELETE FROM CSSD_request WHERE crd_id_pk = @id');
 
-    res.json(check.recordset[0]);
+    res.json({ 
+      message: 'Request deleted successfully',
+      deletedId: id 
+    });
   } catch (error) {
     console.error('Error deleting request:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Failed to delete request', details: error.message });
   }
 };

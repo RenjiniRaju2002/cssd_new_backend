@@ -75,7 +75,7 @@ const controller = require('../controllers/availableItemsController');
  *       201:
  *         description: Created
  */
-router.get('/', controller.getAll);
+router.get('/availableItems', controller.getAll);
 router.post('/', controller.create);
 
 /**
@@ -137,8 +137,18 @@ router.post('/', controller.create);
  *       404:
  *         description: Not found
  */
-router.get('/:id', controller.getById);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+// router.get('/:id', controller.getById);
+// router.put('/:id', controller.update);
+// router.delete('/:id', controller.remove);
+// route.post('/availableItems', controller.create);
+
+
+
+router.get('/availableItems', controller.getAll);       // GET all
+router.post('/availableItems', controller.create);      // POST new
+router.get('/availableItems/:id', controller.getById);  // GET one
+router.put('/availableItems/:id', controller.update);   // PUT update
+router.delete('/availableItems/:id', controller.remove); // DELETE one
+
 
 module.exports = router; 

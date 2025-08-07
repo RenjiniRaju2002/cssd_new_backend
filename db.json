@@ -766,6 +766,36 @@
       "endTime": "",
       "status": "In Progress",
       "duration": 75
+    },
+    {
+      "id": "STE019",
+      "machine": "Autoclave-1",
+      "process": "Steam Sterilization",
+      "itemId": "SURG001",
+      "startTime": "14:01",
+      "endTime": "",
+      "status": "In Progress",
+      "duration": 45
+    },
+    {
+      "id": "STE020",
+      "machine": "Autoclave-2",
+      "process": "Plasma Sterilization",
+      "itemId": "SURG001",
+      "startTime": "14:01",
+      "endTime": "",
+      "status": "In Progress",
+      "duration": 60
+    },
+    {
+      "id": "STE021",
+      "machine": "Autoclave-1",
+      "process": "Steam Sterilization",
+      "itemId": "REQ042",
+      "startTime": "14:10",
+      "endTime": "",
+      "status": "In Progress",
+      "duration": 45
     }
   ],
   "availableItems": [

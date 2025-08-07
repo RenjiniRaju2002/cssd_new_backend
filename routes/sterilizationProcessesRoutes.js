@@ -74,8 +74,6 @@ const controller = require('../controllers/sterilizationProcessesController');
  *       201:
  *         description: Created
  */
-router.get('/', controller.getAll);
-router.post('/', controller.create);
 
 /**
  * @swagger
@@ -135,9 +133,14 @@ router.post('/', controller.create);
  *         description: Deleted
  *       404:
  *         description: Not found
- */
+*/
+
+
+router.get('/', controller.getAll);
+router.post('/', controller.create);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
+router.patch('/:id', controller.update); // Add PATCH route for frontend compatibility
 router.delete('/:id', controller.remove);
 
 module.exports = router; 

@@ -143,4 +143,46 @@ router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
 
-module.exports = router; 
+/**
+ * @swagger
+ * /cssd_requests/{id}/approve:
+ *   patch:
+ *     summary: Approve a CSSD request
+ *     tags: [CssdRequests]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request ID
+ *     responses:
+ *       200:
+ *         description: Request approved successfully
+ *       404:
+ *         description: Request not found
+ */
+router.patch('/:id/approve', controller.approve);
+
+/**
+ * @swagger
+ * /cssd_requests/{id}/reject:
+ *   patch:
+ *     summary: Reject a CSSD request
+ *     tags: [CssdRequests]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request ID
+ *     responses:
+ *       200:
+ *         description: Request rejected successfully
+ *       404:
+ *         description: Request not found
+ */
+router.patch('/:id/reject', controller.reject);
+
+module.exports = router;

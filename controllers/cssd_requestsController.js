@@ -36,6 +36,7 @@ exports.getAll = async (req, res) => {
       
       return {
         id: `REQ${row.crd_id_pk.toString().padStart(3, '0')}`,
+        crd_id_pk: row.crd_id_pk, // Include the actual database ID for foreign key references
         department: row.crd_department,
         items: row.crd_items,
         quantity: row.crd_quantity,
@@ -97,6 +98,7 @@ exports.getById = async (req, res) => {
     
     const transformedData = {
       id: `REQ${row.crd_id_pk.toString().padStart(3, '0')}`,
+      crd_id_pk: row.crd_id_pk, // Include the actual database ID for foreign key references
       department: row.crd_department,
       items: row.crd_items,
       quantity: row.crd_quantity,
@@ -198,6 +200,80 @@ exports.update = async (req, res) => {
   } catch (error) {
     console.error('Error updating request:', error);
     res.status(500).json({ error: 'Failed to update request', details: error.message });
+  }
+};
+
+// APPROVE REQUEST
+exports.approve = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await poolPromise;
+    
+    // Check if request exists
+    const checkResult = await pool.request()
+      .input('id', sql.BigInt, id)
+      .query('SELECT * FROM CSSD_request WHERE crd_id_pk = @id');
+
+    if (checkResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Update the request status to approved
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .query(`
+        UPDATE CSSD_request
+        SET crd_status = 'Approved',
+            crd_modified_on = GETDATE()
+        WHERE crd_id_pk = @id
+      `);
+
+    res.json({ 
+      message: 'Request approved successfully',
+      id,
+      status: 'Approved'
+    });
+  } catch (error) {
+    console.error('Error approving request:', error);
+    res.status(500).json({ error: 'Failed to approve request', details: error.message });
+  }
+};
+
+// REJECT REQUEST
+exports.reject = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await poolPromise;
+    
+    // Check if request exists
+    const checkResult = await pool.request()
+      .input('id', sql.BigInt, id)
+      .query('SELECT * FROM CSSD_request WHERE crd_id_pk = @id');
+
+    if (checkResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Update the request status to rejected
+    await pool.request()
+      .input('id', sql.BigInt, id)
+      .query(`
+        UPDATE CSSD_request
+        SET crd_status = 'Rejected',
+            crd_modified_on = GETDATE()
+        WHERE crd_id_pk = @id
+      `);
+
+    res.json({ 
+      message: 'Request rejected successfully',
+      id,
+      status: 'Rejected'
+    });
+  } catch (error) {
+    console.error('Error rejecting request:', error);
+    res.status(500).json({ error: 'Failed to reject request', details: error.message });
   }
 };
 

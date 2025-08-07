@@ -8,7 +8,7 @@ const { poolPromise } = require('./db'); // ✅ Import MSSQL connection
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:8086', 'http://localhost:3001', 'http://localhost:5173'],
+  origin: ['http://localhost:8086', 'http://localhost:3001', 'http://localhost:5173','http://192.168.50.95:8086','http://192.168.50.95:3001','https://192.168.50.95:5173'],
   credentials: true
 }));
 
